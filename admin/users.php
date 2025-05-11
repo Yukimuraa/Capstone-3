@@ -115,10 +115,10 @@ $result = $conn->query($query);
                 
                 <!-- Add new user button -->
                 <div class="mb-6">
-                    <button type="button" class="bg-emerald-600 text-white py-2 px-4 rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2" onclick="openAddModal()">
-                        <i class="fas fa-plus mr-1"></i> Add New User
-                    </button>
-                </div>
+    <button type="button" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" onclick="openAddModal()">
+        <i class="fas fa-plus mr-1"></i> Add New User
+    </button>
+</div>
                 
                 <!-- Users table -->
                 <div class="bg-white rounded-lg shadow">
@@ -226,9 +226,9 @@ $result = $conn->query($query);
                 <button type="button" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-md mr-2 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2" onclick="closeAddModal()">
                     Cancel
                 </button>
-                <button type="submit" class="bg-emerald-600 text-white py-2 px-4 rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
-                    Add User
-                </button>
+                <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+    Add User
+</button>
             </div>
         </form>
     </div>

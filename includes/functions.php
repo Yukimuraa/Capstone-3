@@ -13,48 +13,62 @@ function sanitize_input($data) {
 }
 
 /**
- * Check if user is logged in
+ * Check if user is logged in for a specific user type
  * 
- * @return bool True if user is logged in, false otherwise
+ * @param string $user_type The user type to check
+ * @return bool True if user is logged in as the specified type, false otherwise
  */
-function is_logged_in() {
-    return isset($_SESSION['user_id']);
+function is_logged_in($user_type = null) {
+    // If no specific user type is provided, check if any user is logged in
+    if ($user_type === null) {
+        return isset($_SESSION['active_user_type']) && 
+               isset($_SESSION['user_sessions'][$_SESSION['active_user_type']]);
+    }
+    
+    // Check if the specific user type is logged in
+    return isset($_SESSION['user_sessions'][$user_type]);
 }
 
 /**
- * Check if user has admin role
+ * Set the active user type for the current request
  * 
- * @return bool True if user is admin, false otherwise
+ * @param string $user_type The user type to set as active
+ * @return bool True if successful, false if the user type is not logged in
  */
-function is_admin() {
-    return isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'admin';
+function set_active_user_type($user_type) {
+    if (isset($_SESSION['user_sessions'][$user_type])) {
+        $_SESSION['active_user_type'] = $user_type;
+        
+        // For backward compatibility, set the session variables directly
+        $_SESSION['user_id'] = $_SESSION['user_sessions'][$user_type]['user_id'];
+        $_SESSION['user_name'] = $_SESSION['user_sessions'][$user_type]['user_name'];
+        $_SESSION['user_email'] = $_SESSION['user_sessions'][$user_type]['user_email'];
+        $_SESSION['user_type'] = $_SESSION['user_sessions'][$user_type]['user_type'];
+        
+        return true;
+    }
+    return false;
 }
 
 /**
- * Check if user has staff role
+ * Get user data for the current active user type
  * 
- * @return bool True if user is staff, false otherwise
+ * @param string $key The user data key to retrieve
+ * @return mixed The user data value or null if not found
  */
-function is_staff() {
-    return isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'staff';
-}
-
-/**
- * Check if user has student role
- * 
- * @return bool True if user is student, false otherwise
- */
-function is_student() {
-    return isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'student';
-}
-
-/**
- * Check if user has external role
- * 
- * @return bool True if user is external, false otherwise
- */
-function is_external() {
-    return isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'external';
+function get_user_data($key = null) {
+    if (!isset($_SESSION['active_user_type']) || 
+        !isset($_SESSION['user_sessions'][$_SESSION['active_user_type']])) {
+        return null;
+    }
+    
+    $user_data = $_SESSION['user_sessions'][$_SESSION['active_user_type']];
+    
+    if ($key === null) {
+        return $user_data;
+    }
+    
+    return $user_data[$key] ?? null;
 }
 
 /**
@@ -63,6 +77,10 @@ function is_external() {
  * @param string $redirect_url URL to redirect to if not logged in
  */
 function require_login($redirect_url = '../login.php') {
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
+    }
+    
     if (!is_logged_in()) {
         header("Location: $redirect_url");
         exit();
@@ -75,11 +93,18 @@ function require_login($redirect_url = '../login.php') {
  * @param string $redirect_url URL to redirect to if not admin
  */
 function require_admin($redirect_url = '../login.php') {
-    require_login($redirect_url);
-    if (!is_admin()) {
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    // Check if admin is logged in
+    if (!isset($_SESSION['user_sessions']['admin'])) {
         header("Location: $redirect_url");
         exit();
     }
+    
+    // Set admin as the active user type
+    set_active_user_type('admin');
 }
 
 /**
@@ -88,11 +113,18 @@ function require_admin($redirect_url = '../login.php') {
  * @param string $redirect_url URL to redirect to if not staff
  */
 function require_staff($redirect_url = '../login.php') {
-    require_login($redirect_url);
-    if (!is_staff()) {
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    // Check if staff is logged in
+    if (!isset($_SESSION['user_sessions']['staff'])) {
         header("Location: $redirect_url");
         exit();
     }
+    
+    // Set staff as the active user type
+    set_active_user_type('staff');
 }
 
 /**
@@ -101,11 +133,18 @@ function require_staff($redirect_url = '../login.php') {
  * @param string $redirect_url URL to redirect to if not student
  */
 function require_student($redirect_url = '../login.php') {
-    require_login($redirect_url);
-    if (!is_student()) {
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    // Check if student is logged in
+    if (!isset($_SESSION['user_sessions']['student'])) {
         header("Location: $redirect_url");
         exit();
     }
+    
+    // Set student as the active user type
+    set_active_user_type('student');
 }
 
 /**
@@ -114,11 +153,54 @@ function require_student($redirect_url = '../login.php') {
  * @param string $redirect_url URL to redirect to if not external
  */
 function require_external($redirect_url = '../login.php') {
-    require_login($redirect_url);
-    if (!is_external()) {
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    // Check if external is logged in
+    if (!isset($_SESSION['user_sessions']['external'])) {
         header("Location: $redirect_url");
         exit();
     }
+    
+    // Set external as the active user type
+    set_active_user_type('external');
+}
+
+/**
+ * Check if user has admin role
+ * 
+ * @return bool True if user is admin, false otherwise
+ */
+function is_admin() {
+    return isset($_SESSION['user_sessions']['admin']);
+}
+
+/**
+ * Check if user has staff role
+ * 
+ * @return bool True if user is staff, false otherwise
+ */
+function is_staff() {
+    return isset($_SESSION['user_sessions']['staff']);
+}
+
+/**
+ * Check if user has student role
+ * 
+ * @return bool True if user is student, false otherwise
+ */
+function is_student() {
+    return isset($_SESSION['user_sessions']['student']);
+}
+
+/**
+ * Check if user has external role
+ * 
+ * @return bool True if user is external, false otherwise
+ */
+function is_external() {
+    return isset($_SESSION['user_sessions']['external']);
 }
 
 /**
@@ -147,4 +229,3 @@ function generate_random_string($length = 10) {
 function format_date($date, $format = 'F j, Y') {
     return date($format, strtotime($date));
 }
-

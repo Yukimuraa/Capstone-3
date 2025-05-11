@@ -6,6 +6,10 @@ require_once '../includes/functions.php';
 // Check if user is admin
 require_admin();
 
+// Get user data for the admin
+$user_id = $_SESSION['user_sessions']['admin']['user_id'];
+$user_name = $_SESSION['user_sessions']['admin']['user_name'];
+
 $page_title = "Admin Dashboard - CHMSU BAO";
 $base_url = "..";
 
@@ -53,7 +57,7 @@ $upcoming_bookings_result = $conn->query($upcoming_bookings_query);
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
                 <h1 class="text-2xl font-semibold text-gray-900">Dashboard</h1>
                 <div class="flex items-center">
-                    <span class="text-gray-700 mr-2"><?php echo $_SESSION['user_name']; ?></span>
+                    <span class="text-gray-700 mr-2"><?php echo $user_name; ?></span>
                     <button class="md:hidden rounded-md p-2 inline-flex items-center justify-center text-gray-500 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500" id="menu-button">
                         <span class="sr-only">Open menu</span>
                         <i class="fas fa-bars"></i>
@@ -94,7 +98,7 @@ $upcoming_bookings_result = $conn->query($upcoming_bookings_query);
                     <div class="bg-white rounded-lg shadow p-4">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-gray-500 text-sm">Upcoming Bookings</p>
+                                <p class="text-gray-500 text-sm">Upcoming reservation</p>
                                 <h3 class="text-2xl font-bold"><?php echo $upcoming_bookings; ?></h3>
                             </div>
                             <div class="bg-purple-100 p-3 rounded-full">
@@ -174,7 +178,7 @@ $upcoming_bookings_result = $conn->query($upcoming_bookings_query);
                 <!-- Upcoming bookings -->
                 <div class="bg-white rounded-lg shadow">
                     <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
-                        <h3 class="text-lg font-medium text-gray-900">Upcoming Bookings</h3>
+                        <h3 class="text-lg font-medium text-gray-900">Upcoming reservation</h3>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
@@ -217,14 +221,14 @@ $upcoming_bookings_result = $conn->query($upcoming_bookings_query);
                                     <?php endwhile; ?>
                                 <?php else: ?>
                                     <tr>
-                                        <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">No upcoming bookings found</td>
+                                        <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">No upcoming reservation found</td>
                                     </tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
                     <div class="px-4 py-3 bg-gray-50 text-right sm:px-6">
-                        <a href="bookings.php" class="text-sm font-medium text-emerald-600 hover:text-emerald-500">View all bookings</a>
+                        <a href="reservation.php" class="text-sm font-medium text-emerald-600 hover:text-emerald-500">View all reservation</a>
                     </div>
                 </div>
             </div>
@@ -240,4 +244,3 @@ $upcoming_bookings_result = $conn->query($upcoming_bookings_query);
 </script>
 
 <?php include '../includes/footer.php'; ?>
-

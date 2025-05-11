@@ -150,7 +150,7 @@ $types_result = $conn->query($types_query);
                         </div>
                         
                         <div>
-                            <button type="submit" class="bg-emerald-600 text-white py-2 px-4 rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
+                            <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
                                 <i class="fas fa-filter mr-1"></i> Filter
                             </button>
                         </div>

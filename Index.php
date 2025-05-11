@@ -24,7 +24,7 @@ session_start();
             </div>
             <div class="flex gap-4">
                 <a href="login.php" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Login</a>
-                <a href="register.php" class="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700">Register</a>
+                <a href="register.php" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Register</a>
             </div>
         </div>
     </header>
@@ -38,13 +38,13 @@ session_start();
             A digital platform designed to improve transaction management at CHMSU. Submit requests, track status, and receive updates online.
         </p>
         <div class="flex justify-center gap-4">
-            <a href="login.php" class="px-6 py-3 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 flex items-center gap-2">
-                Get Started <i class="fas fa-chevron-right text-sm"></i>
-            </a>
-            <a href="#features" class="px-6 py-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
-                Learn More
-            </a>
-        </div>
+    <a href="login.php" class="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2">
+        Get Started <i class="fas fa-chevron-right text-sm"></i>
+    </a>
+    <a href="#features" class="px-6 py-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+        Learn More
+    </a>
+</div>
     </section>
 
     <!-- Features Section -->

@@ -6,13 +6,17 @@ require_once '../includes/functions.php';
 // Check if user is student
 require_student();
 
+// Get user data for the student
+$user_id = $_SESSION['user_sessions']['student']['user_id'];
+$user_name = $_SESSION['user_sessions']['student']['user_name'];
+
 $page_title = "Student Dashboard - CHMSU BAO";
 $base_url = "..";
 
 // Get pending requests count
 $pending_requests_query = "SELECT COUNT(*) as count FROM requests WHERE user_id = ? AND status = 'pending'";
 $stmt = $conn->prepare($pending_requests_query);
-$stmt->bind_param("i", $_SESSION['user_id']);
+$stmt->bind_param("i", $user_id);
 $stmt->execute();
 $pending_result = $stmt->get_result();
 $pending_count = $pending_result->fetch_assoc()['count'];
@@ -20,7 +24,7 @@ $pending_count = $pending_result->fetch_assoc()['count'];
 // Get orders ready for pickup
 $ready_orders_query = "SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND status = 'approved'";
 $stmt = $conn->prepare($ready_orders_query);
-$stmt->bind_param("i", $_SESSION['user_id']);
+$stmt->bind_param("i", $user_id);
 $stmt->execute();
 $ready_result = $stmt->get_result();
 $ready_count = $ready_result->fetch_assoc()['count'];
@@ -31,7 +35,7 @@ $recent_activity_query = "SELECT COUNT(*) as count FROM
                          UNION ALL
                          SELECT id FROM orders WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)) as activity";
 $stmt = $conn->prepare($recent_activity_query);
-$stmt->bind_param("ii", $_SESSION['user_id'], $_SESSION['user_id']);
+$stmt->bind_param("ii", $user_id, $user_id);
 $stmt->execute();
 $activity_result = $stmt->get_result();
 $activity_count = $activity_result->fetch_assoc()['count'];
@@ -39,7 +43,7 @@ $activity_count = $activity_result->fetch_assoc()['count'];
 // Get recent requests
 $recent_requests_query = "SELECT * FROM requests WHERE user_id = ? ORDER BY created_at DESC LIMIT 3";
 $stmt = $conn->prepare($recent_requests_query);
-$stmt->bind_param("i", $_SESSION['user_id']);
+$stmt->bind_param("i", $user_id);
 $stmt->execute();
 $recent_requests = $stmt->get_result();
 
@@ -59,7 +63,7 @@ $inventory_result = $conn->query($inventory_query);
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
                 <h1 class="text-2xl font-semibold text-gray-900">Student Dashboard</h1>
                 <div class="flex items-center">
-                    <span class="text-gray-700 mr-2"><?php echo $_SESSION['user_name']; ?></span>
+                    <span class="text-gray-700 mr-2"><?php echo $user_name; ?></span>
                     <button class="md:hidden rounded-md p-2 inline-flex items-center justify-center text-gray-500 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500" id="menu-button">
                         <span class="sr-only">Open menu</span>
                         <i class="fas fa-bars"></i>
@@ -251,4 +255,3 @@ $inventory_result = $conn->query($inventory_query);
 </script>
 
 <?php include '../includes/footer.php'; ?>
-
