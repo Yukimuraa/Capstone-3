@@ -46,6 +46,7 @@ $upcoming_bookings_query = "SELECT b.*, u.name as user_name, u.organization
 $upcoming_bookings_result = $conn->query($upcoming_bookings_query);
 ?>
 
+
 <?php include '../includes/header.php'; ?>
 
 <div class="flex h-screen bg-gray-100">
@@ -184,7 +185,7 @@ $upcoming_bookings_result = $conn->query($upcoming_bookings_query);
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reservation ID</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Facility</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requester</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
@@ -227,9 +228,9 @@ $upcoming_bookings_result = $conn->query($upcoming_bookings_query);
                             </tbody>
                         </table>
                     </div>
-                    <div class="px-4 py-3 bg-gray-50 text-right sm:px-6">
+                    <!-- <div class="px-4 py-3 bg-gray-50 text-right sm:px-6">
                         <a href="reservation.php" class="text-sm font-medium text-emerald-600 hover:text-emerald-500">View all reservation</a>
-                    </div>
+                    </div> -->
                 </div>
             </div>
         </main>

@@ -137,7 +137,7 @@ $booked_dates_json = json_encode($booked_dates);
         <!-- Top header -->
         <header class="bg-white shadow-sm z-10">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-                <h1 class="text-2xl font-semibold text-gray-900">Gymnasium Booking</h1>
+                <h1 class="text-2xl font-semibold text-gray-900">Gymnasium Reservation</h1>
                 <div class="flex items-center">
                     <span class="text-gray-700 mr-2"><?php echo $_SESSION['user_name']; ?></span>
                     <button class="md:hidden rounded-md p-2 inline-flex items-center justify-center text-gray-500 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-amber-500" id="menu-button">
@@ -166,7 +166,7 @@ $booked_dates_json = json_encode($booked_dates);
                 <!-- Book button -->
                 <div class="mb-6">
                     <button type="button" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2" onclick="openBookingModal()">
-                        <i class="fas fa-calendar-plus mr-1"></i> Book Gymnasium
+                        <i class="fas fa-calendar-plus mr-1"></i> Reservation Gymnasium
                     </button>
                 </div>
                 
@@ -174,8 +174,8 @@ $booked_dates_json = json_encode($booked_dates);
                     <!-- Booking Calendar -->
                     <div class="bg-white rounded-lg shadow">
                         <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
-                            <h3 class="text-lg font-medium text-gray-900">Booking Calendar</h3>
-                            <p class="mt-1 text-sm text-gray-500">View available dates for gymnasium booking</p>
+                            <h3 class="text-lg font-medium text-gray-900">Reservation Calendar</h3>
+                            <p class="mt-1 text-sm text-gray-500">View available dates for gymnasium Reservation</p>
                         </div>
                         <div class="p-4">
                             <div id="booking-calendar" class="bg-white p-2 rounded-lg"></div>
@@ -195,17 +195,17 @@ $booked_dates_json = json_encode($booked_dates);
                     <!-- Booking Guidelines -->
                     <div class="bg-white rounded-lg shadow">
                         <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
-                            <h3 class="text-lg font-medium text-gray-900">Booking Guidelines</h3>
-                            <p class="mt-1 text-sm text-gray-500">Important information for gymnasium bookings</p>
+                            <h3 class="text-lg font-medium text-gray-900">Reservation Guidelines</h3>
+                            <p class="mt-1 text-sm text-gray-500">Important information for gymnasium Reservation</p>
                         </div>
                         <div class="p-4">
                             <ul class="list-disc pl-5 space-y-2 text-sm text-gray-700">
-                                <li>Bookings must be made at least 3 days in advance.</li>
+                                <li>Reservation must be made at least 3 days in advance.</li>
                                 <li>Maximum capacity of the gymnasium is 500 people.</li>
-                                <li>Bookings are subject to approval by the administration.</li>
+                                <li>Reservation are subject to approval by the administration.</li>
                                 <li>Cancellations must be made at least 24 hours before the scheduled time.</li>
                                 <li>The organization is responsible for cleaning up after the event.</li>
-                                <li>Any damages to the facility will be charged to the booking organization.</li>
+                                <li>Any damages to the facility will be charged to the Reservation organization.</li>
                                 <li>For inquiries, please contact the BAO office at (034) 123-4567.</li>
                             </ul>
                         </div>
@@ -215,14 +215,14 @@ $booked_dates_json = json_encode($booked_dates);
                 <!-- My Bookings -->
                 <div class="mt-6 bg-white rounded-lg shadow">
                     <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
-                        <h3 class="text-lg font-medium text-gray-900">My Bookings</h3>
-                        <p class="mt-1 text-sm text-gray-500">View your gymnasium booking history</p>
+                        <h3 class="text-lg font-medium text-gray-900">My Reservation</h3>
+                        <p class="mt-1 text-sm text-gray-500">View your gymnasium Reservation history</p>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reservation ID</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purpose</th>
@@ -303,7 +303,7 @@ $booked_dates_json = json_encode($booked_dates);
 <div id="bookingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
     <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
         <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-medium text-gray-900">Book Gymnasium</h3>
+            <h3 class="text-lg font-medium text-gray-900">Reservation Gymnasium</h3>
             <button type="button" class="text-gray-400 hover:text-gray-500" onclick="closeBookingModal()">
                 <i class="fas fa-times"></i>
             </button>
@@ -372,14 +372,14 @@ $booked_dates_json = json_encode($booked_dates);
 <div id="detailsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
     <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
         <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-medium text-gray-900">Booking Details</h3>
+            <h3 class="text-lg font-medium text-gray-900">Reservation Details</h3>
             <button type="button" class="text-gray-400 hover:text-gray-500" onclick="closeDetailsModal()">
                 <i class="fas fa-times"></i>
             </button>
         </div>
         <div class="space-y-4">
             <div>
-                <h4 class="text-sm font-medium text-gray-500">Booking ID</h4>
+                <h4 class="text-sm font-medium text-gray-500">Reservation ID</h4>
                 <p id="detail-booking-id" class="mt-1 text-sm text-gray-900"></p>
             </div>
             <div>

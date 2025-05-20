@@ -10,28 +10,33 @@ require_admin();
 $user_id = $_SESSION['user_sessions']['admin']['user_id'];
 $user_name = $_SESSION['user_sessions']['admin']['user_name'];
 
-$page_title = "Order Management - CHMSU BAO";
+$page_title = "Booking Management - CHMSU BAO";
 $base_url = "..";
 
 // Handle status updates
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['order_id']) && isset($_POST['status'])) {
-    $order_id = (int)$_POST['order_id'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_id']) && isset($_POST['status'])) {
+    $booking_id = (int)$_POST['booking_id'];
     $status = $_POST['status'];
+    $notes = $_POST['notes'] ?? '';
     
-    $update_query = "UPDATE orders SET status = ? WHERE id = ?";
+    $update_query = "UPDATE bookings SET status = ?, notes = ? WHERE id = ?";
     $stmt = $conn->prepare($update_query);
-    $stmt->bind_param("si", $status, $order_id);
+    $stmt->bind_param("ssi", $status, $notes, $booking_id);
     
     if ($stmt->execute()) {
-        $success_message = "Order status updated successfully!";
+        $success_message = "Booking status updated successfully!";
     } else {
-        $error_message = "Error updating order status.";
+        $error_message = "Error updating booking status.";
     }
 }
 
-// Get all orders with user details and item information
-$query = "SELECT o.*, u.name as user_name, u.email as user_email, u.department as user_department, i.name as item_name, i.price as item_price, o.quantity, o.total_price, o.status FROM orders o JOIN users u ON o.user_id = u.id JOIN inventory i ON o.inventory_id = i.id ORDER BY o.created_at DESC";
-$orders = $conn->query($query);
+// Get all bookings with user and facility details
+$query = "SELECT b.*, f.name as facility_name, u.name as user_name, u.email as user_email 
+          FROM bookings b 
+          JOIN facilities f ON b.facility_id = f.id 
+          JOIN users u ON b.user_id = u.id 
+          ORDER BY b.booking_date DESC, b.start_time DESC";
+$bookings = $conn->query($query);
 ?>
 
 <?php include '../includes/header.php'; ?>
@@ -43,7 +48,7 @@ $orders = $conn->query($query);
         <!-- Top header -->
         <header class="bg-white shadow-sm z-10">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-                <h1 class="text-2xl font-semibold text-gray-900">Order Management</h1>
+                <h1 class="text-2xl font-semibold text-gray-900">Booking Management</h1>
                 <div class="flex items-center">
                     <span class="text-gray-700 mr-2"><?php echo $user_name; ?></span>
                     <button class="md:hidden rounded-md p-2 inline-flex items-center justify-center text-gray-500 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500" id="menu-button">
@@ -69,35 +74,40 @@ $orders = $conn->query($query);
                     </div>
                 <?php endif; ?>
                 
-                <!-- Orders Table -->
+                <!-- Bookings Table -->
                 <div class="bg-white rounded-lg shadow overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Facility</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purpose</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                <?php if ($orders->num_rows > 0): ?>
-                                    <?php while ($order = $orders->fetch_assoc()): ?>
+                                <?php if ($bookings->num_rows > 0): ?>
+                                    <?php while ($booking = $bookings->fetch_assoc()): ?>
                                         <tr>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <?php echo $order['order_id']; ?>
+                                                <?php echo $booking['facility_name']; ?>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <?php echo $order['item_name']; ?>
+                                                <?php echo $booking['user_name']; ?><br>
+                                                <span class="text-xs text-gray-400"><?php echo $booking['user_email']; ?></span>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <?php echo $order['quantity'] ?? 'N/A'; ?>
+                                                <?php echo date('M d, Y', strtotime($booking['booking_date'])); ?><br>
+                                                <span class="text-xs">
+                                                    <?php echo date('h:i A', strtotime($booking['start_time'])); ?> - 
+                                                    <?php echo date('h:i A', strtotime($booking['end_time'])); ?>
+                                                </span>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                ₱<?php echo isset($order['total_price']) ? number_format($order['total_price'], 2) : '0.00'; ?>
+                                                <?php echo $booking['purpose']; ?>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <?php
@@ -107,34 +117,33 @@ $orders = $conn->query($query);
                                                     'rejected' => 'bg-red-100 text-red-800',
                                                     'cancelled' => 'bg-gray-100 text-gray-800'
                                                 ];
-                                                $status_class = $status_classes[$order['status']] ?? 'bg-gray-100 text-gray-800';
+                                                $status_class = $status_classes[$booking['status']] ?? 'bg-gray-100 text-gray-800';
                                                 ?>
                                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $status_class; ?>">
-                                                    <?php echo ucfirst($order['status']); ?>
+                                                    <?php echo ucfirst($booking['status']); ?>
                                                 </span>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <?php if ($order['status'] === 'approved'): ?>
-                                                    <a href="print_order_receipt.php?id=<?php echo $order['id']; ?>" 
-                                                       class="text-emerald-600 hover:text-emerald-900"
-                                                       target="_blank">
-                                                        <i class="fas fa-receipt"></i> View Receipt
-                                                    </a>
-                                                    <form action="orders.php" method="POST" style="display: inline;">
-                                                        <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
-                                                        <input type="hidden" name="status" value="completed">
-                                                        <button type="submit" class="text-blue-600 hover:text-blue-900 ml-2">
-                                                            <i class="fas fa-check"></i> Mark Complete
-                                                        </button>
-                                                    </form>
-                                                <?php endif; ?>
+                                                <div class="flex space-x-2">
+                                                    <?php if ($booking['status'] === 'approved'): ?>
+                                                        <a href="print_receipt.php?id=<?php echo $booking['id']; ?>" 
+                                                           class="text-emerald-600 hover:text-emerald-900"
+                                                           target="_blank">
+                                                            <i class="fas fa-receipt"></i> View Receipt
+                                                        </a>
+                                                    <?php endif; ?>
+                                                    <button onclick="openStatusModal(<?php echo $booking['id']; ?>, '<?php echo $booking['status']; ?>')"
+                                                            class="text-blue-600 hover:text-blue-900">
+                                                        <i class="fas fa-edit"></i> Update Status
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     <?php endwhile; ?>
                                 <?php else: ?>
                                     <tr>
                                         <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
-                                            No orders found
+                                            No bookings found
                                         </td>
                                     </tr>
                                 <?php endif; ?>
@@ -151,9 +160,9 @@ $orders = $conn->query($query);
 <div id="statusModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full">
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div class="mt-3">
-            <h3 class="text-lg font-medium text-gray-900">Update Order Status</h3>
-            <form action="orders.php" method="POST" class="mt-4">
-                <input type="hidden" name="order_id" id="modal_order_id">
+            <h3 class="text-lg font-medium text-gray-900">Update Booking Status</h3>
+            <form action="bookings.php" method="POST" class="mt-4">
+                <input type="hidden" name="booking_id" id="modal_booking_id">
                 <div class="mb-4">
                     <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
                     <select name="status" id="status" required
@@ -163,6 +172,11 @@ $orders = $conn->query($query);
                         <option value="rejected">Rejected</option>
                         <option value="cancelled">Cancelled</option>
                     </select>
+                </div>
+                <div class="mb-4">
+                    <label for="notes" class="block text-sm font-medium text-gray-700">Notes</label>
+                    <textarea name="notes" id="notes" rows="3"
+                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-500 focus:ring-opacity-50"></textarea>
                 </div>
                 <div class="flex justify-end space-x-3">
                     <button type="button" onclick="closeStatusModal()"
@@ -186,8 +200,8 @@ $orders = $conn->query($query);
     });
     
     // Status modal functions
-    function openStatusModal(orderId, currentStatus) {
-        document.getElementById('modal_order_id').value = orderId;
+    function openStatusModal(bookingId, currentStatus) {
+        document.getElementById('modal_booking_id').value = bookingId;
         document.getElementById('status').value = currentStatus;
         document.getElementById('statusModal').classList.remove('hidden');
     }
@@ -197,5 +211,4 @@ $orders = $conn->query($query);
     }
 </script>
 
-<?php include '../includes/footer.php'; ?>
-
+<?php include '../includes/footer.php'; ?> 

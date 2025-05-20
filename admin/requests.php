@@ -209,15 +209,15 @@ $types_result = $conn->query($types_query);
                                                 <?php if ($request['status'] == 'pending'): ?>
                                                     <form method="POST" action="requests.php" class="inline">
                                                         <input type="hidden" name="request_id" value="<?php echo $request['id']; ?>">
-                                                        <input type="hidden" name="action" value="approve">
-                                                        <button type="submit" class="text-green-600 hover:text-green-900 mr-3" onclick="return confirm('Are you sure you want to approve this request?')">Approve</button>
+                                                        <!-- <input type="hidden" name="action" value="approve"> -->
+                                                        <!-- <button type="submit" class="text-green-600 hover:text-green-900 mr-3" onclick="return confirm('Are you sure you want to approve this request?')">Approve</button> -->
                                                     </form>
                                                     
                                                     <form method="POST" action="requests.php" class="inline">
                                                         <input type="hidden" name="request_id" value="<?php echo $request['id']; ?>">
                                                         <input type="hidden" name="action" value="reject">
-                                                          name="action" value="reject">
-                                                        <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Are you sure you want to reject this request?')">Reject</button>
+                                                          <!-- name="action" value="reject"> -->
+                                                        <!-- <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Are you sure you want to reject this request?')">Reject</button> -->
                                                     </form>
                                                 <?php endif; ?>
                                             </td>

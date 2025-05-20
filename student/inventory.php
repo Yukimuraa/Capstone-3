@@ -68,11 +68,11 @@ if (!file_exists($upload_dir)) {
                         <?php while ($item = $result->fetch_assoc()): ?>
                             <div class="bg-white rounded-lg shadow overflow-hidden <?php echo $item['in_stock'] ? '' : 'opacity-70'; ?>">
                                 <div class="p-4">
-                                    <div class="h-48 bg-gray-100 rounded-md flex items-center justify-center mb-4 overflow-hidden">
+                                    <div class="h-48 w-full bg-gray-100 rounded-md flex items-center justify-center mb-4 overflow-hidden">
                                         <?php if (!empty($item['image_path']) && file_exists('../' . $item['image_path'])): ?>
-                                            <img src="<?php echo '../' . $item['image_path']; ?>" alt="<?php echo $item['name']; ?>" class="object-cover h-full w-full">
+                                            <img src="<?php echo '../' . $item['image_path']; ?>" alt="<?php echo $item['name']; ?>" class="h-full w-full object-contain">
                                         <?php elseif (!empty($item['image_path'])): ?>
-                                            <img src="<?php echo $item['image_path']; ?>" alt="<?php echo $item['name']; ?>" class="object-cover h-full w-full">
+                                            <img src="<?php echo $item['image_path']; ?>" alt="<?php echo $item['name']; ?>" class="h-full w-full object-contain">
                                         <?php else: ?>
                                             <!-- Default image based on item type -->
                                             <?php 
@@ -93,7 +93,7 @@ if (!file_exists($upload_dir)) {
                                                 $icon_class = 'fa-certificate';
                                             }
                                             ?>
-                                            <i class="fas <?php echo $icon_class; ?> text-gray-400 text-4xl"></i>
+                                            <i class="fas <?php echo $icon_class; ?> text-gray-400 text-5xl"></i>
                                         <?php endif; ?>
                                     </div>
                                     <h3 class="text-lg font-medium text-gray-900"><?php echo $item['name']; ?></h3>

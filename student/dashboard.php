@@ -41,14 +41,14 @@ $activity_result = $stmt->get_result();
 $activity_count = $activity_result->fetch_assoc()['count'];
 
 // Get recent requests
-$recent_requests_query = "SELECT * FROM requests WHERE user_id = ? ORDER BY created_at DESC LIMIT 3";
+$recent_requests_query = "SELECT * FROM requests WHERE user_id = ? ORDER BY created_at DESC LIMIT 6";
 $stmt = $conn->prepare($recent_requests_query);
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $recent_requests = $stmt->get_result();
 
 // Get available inventory items
-$inventory_query = "SELECT * FROM inventory WHERE in_stock = 1 LIMIT 3";
+$inventory_query = "SELECT * FROM inventory WHERE in_stock = 1 LIMIT 6";
 $inventory_result = $conn->query($inventory_query);
 ?>
 
@@ -75,61 +75,6 @@ $inventory_result = $conn->query($inventory_query);
         <!-- Main content -->
         <main class="flex-1 overflow-y-auto p-4">
             <div class="max-w-7xl mx-auto">
-                <!-- Stats cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <div class="bg-white rounded-lg shadow p-4">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-gray-500 text-sm">Pending Requests</p>
-                                <h3 class="text-2xl font-bold"><?php echo $pending_count; ?></h3>
-                            </div>
-                            <div class="bg-yellow-100 p-3 rounded-full">
-                                <i class="fas fa-clipboard-list text-yellow-600"></i>
-                            </div>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-2">Awaiting approval</p>
-                    </div>
-                    
-                    <div class="bg-white rounded-lg shadow p-4">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-gray-500 text-sm">Items Ordered</p>
-                                <h3 class="text-2xl font-bold"><?php echo $ready_count; ?></h3>
-                            </div>
-                            <div class="bg-green-100 p-3 rounded-full">
-                                <i class="fas fa-box text-green-600"></i>
-                            </div>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-2">Ready for pickup</p>
-                    </div>
-                    
-                    <div class="bg-white rounded-lg shadow p-4">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-gray-500 text-sm">Recent Activity</p>
-                                <h3 class="text-2xl font-bold"><?php echo $activity_count; ?></h3>
-                            </div>
-                            <div class="bg-blue-100 p-3 rounded-full">
-                                <i class="fas fa-clock text-blue-600"></i>
-                            </div>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-2">In the last 30 days</p>
-                    </div>
-                    
-                    <div class="bg-white rounded-lg shadow p-4">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-gray-500 text-sm">Upcoming Events</p>
-                                <h3 class="text-2xl font-bold">1</h3>
-                            </div>
-                            <div class="bg-purple-100 p-3 rounded-full">
-                                <i class="fas fa-calendar-alt text-purple-600"></i>
-                            </div>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-2">In the next 7 days</p>
-                    </div>
-                </div>
-                
                 <!-- Tabs for Recent Requests and Available Items -->
                 <div class="bg-white rounded-lg shadow mb-6">
                     <div class="border-b border-gray-200">
@@ -137,15 +82,15 @@ $inventory_result = $conn->query($inventory_query);
                             <button id="tab-requests" class="tab-button active py-4 px-6 border-b-2 border-emerald-500 font-medium text-sm text-emerald-600">
                                 Recent Requests
                             </button>
-                            <button id="tab-inventory" class="tab-button py-4 px-6 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            <!-- <button id="tab-inventory" class="tab-button py-4 px-6 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
                                 Available Items
-                            </button>
+                            </button> -->
                         </nav>
                     </div>
                     
                     <!-- Recent Requests Tab Content -->
                     <div id="content-requests" class="tab-content p-4">
-                        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        <div class="grid gap-4 grid-cols-1 md:grid-cols-3 grid-rows-2">
                             <?php if ($recent_requests->num_rows > 0): ?>
                                 <?php while ($request = $recent_requests->fetch_assoc()): ?>
                                     <div class="bg-white border rounded-lg shadow-sm p-4">
@@ -184,7 +129,7 @@ $inventory_result = $conn->query($inventory_query);
                     
                     <!-- Available Items Tab Content -->
                     <div id="content-inventory" class="tab-content p-4 hidden">
-                        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        <div class="grid gap-4 grid-cols-1 md:grid-cols-3 grid-rows-2">
                             <?php if ($inventory_result->num_rows > 0): ?>
                                 <?php while ($item = $inventory_result->fetch_assoc()): ?>
                                     <div class="bg-white border rounded-lg shadow-sm p-4">

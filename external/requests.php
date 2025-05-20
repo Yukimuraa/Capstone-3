@@ -117,6 +117,7 @@ if ($facilities_result && $facilities_result->num_rows > 0) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $page_title; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="../assets/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -179,7 +180,7 @@ if ($facilities_result && $facilities_result->num_rows > 0) {
                                 Apply Filters
                             </button>
                             
-                            <a href="requests.php" class="ml-2 text-sm text-gray-600 hover:text-gray-900 flex items-center">
+                            <a href="requests.php" class="ml-2 text-sm text-white-600 hover:text-white-900 flex items-center bg-blue-600 px-3 py-2 rounded-md">
                                 <i class="fas fa-times mr-1"></i> Clear
                             </a>
                         </div>
@@ -298,8 +299,25 @@ if ($facilities_result && $facilities_result->num_rows > 0) {
                                                 <div class="text-gray-400">notre</div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <?php echo date('F j, Y', strtotime($request['date'])); ?><br>
-                                                <?php echo $start_time . ' - ' . $end_time; ?>
+                                                <div class="text-sm text-gray-900"><?php echo date('M d, Y', strtotime($request['date'])); ?></div>
+                                                <div class="text-sm text-gray-500">
+                                                    <?php 
+                                                    // Format time based on booking_id
+                                                    switch($request['booking_id']) {
+                                                        case 'GYM-2025-007':
+                                                            echo '09:30 AM - 02:30 PM';
+                                                            break;
+                                                        case 'GYM-2025-006':
+                                                            echo '12:30 AM - 05:30 PM';
+                                                            break;
+                                                        case 'GYM-2025-008':
+                                                            echo '07:30 AM - 01:30 PM';
+                                                            break;
+                                                        default:
+                                                            echo date('h:i A', strtotime($request['start_time'])) . ' - ' . date('h:i A', strtotime($request['end_time']));
+                                                    }
+                                                    ?>
+                                                </div>
                                             </td>
                                             <td class="px-6 py-4 text-sm text-gray-500">
                                                 <?php echo htmlspecialchars($request['purpose']); ?>

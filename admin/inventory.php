@@ -26,6 +26,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
            $quantity = intval($_POST['quantity']);
            $in_stock = isset($_POST['in_stock']) ? 1 : 0;
            
+           // Handle sizes for specific clothing items
+           $sizes = null;
+           $sizingItems = ['BSIT OJT - Shirt', 'NSTP Shirt - CWTS', 'NSTP Shirt - LTS', 'NSTP Shirt - ROTC', 'P.E - Pants', 'P.E T-Shirt'];
+           $needs_sizes = false;
+           
+           foreach ($sizingItems as $item) {
+               if (strpos($name, $item) !== false) {
+                   $needs_sizes = true;
+                   break;
+               }
+           }
+           
+           if ($needs_sizes && isset($_POST['sizes']) && !empty($_POST['sizes'])) {
+               $sizes = json_encode($_POST['sizes']);
+           }
+           
            // Handle image upload
            $image_path = null;
            if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
@@ -44,8 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                }
            }
            
-           $stmt = $conn->prepare("INSERT INTO inventory (name, description, price, quantity, in_stock, image_path) VALUES (?, ?, ?, ?, ?, ?)");
-           $stmt->bind_param("ssdiss", $name, $description, $price, $quantity, $in_stock, $image_path);
+           $stmt = $conn->prepare("INSERT INTO inventory (name, description, price, quantity, in_stock, image_path, sizes) VALUES (?, ?, ?, ?, ?, ?, ?)");
+           $stmt->bind_param("ssdisss", $name, $description, $price, $quantity, $in_stock, $image_path, $sizes);
            
            if ($stmt->execute()) {
                $success_message = "Item added successfully";
@@ -62,6 +78,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
            $price = floatval($_POST['price']);
            $quantity = intval($_POST['quantity']);
            $in_stock = isset($_POST['in_stock']) ? 1 : 0;
+           
+           // Handle sizes for specific clothing items
+           $sizes = null;
+           $sizingItems = ['BSIT OJT - Shirt', 'NSTP Shirt - CWTS', 'NSTP Shirt - LTS', 'NSTP Shirt - ROTC', 'P.E - Pants', 'P.E T-Shirt'];
+           $needs_sizes = false;
+           
+           foreach ($sizingItems as $item) {
+               if (strpos($name, $item) !== false) {
+                   $needs_sizes = true;
+                   break;
+               }
+           }
+           
+           if ($needs_sizes && isset($_POST['sizes']) && !empty($_POST['sizes'])) {
+               $sizes = json_encode($_POST['sizes']);
+           }
            
            // Get current image path
            $stmt = $conn->prepare("SELECT image_path FROM inventory WHERE id = ?");
@@ -102,8 +134,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                $image_path = null;
            }
            
-           $stmt = $conn->prepare("UPDATE inventory SET name = ?, description = ?, price = ?, quantity = ?, in_stock = ?, image_path = ? WHERE id = ?");
-           $stmt->bind_param("ssdissi", $name, $description, $price, $quantity, $in_stock, $image_path, $id);
+           $stmt = $conn->prepare("UPDATE inventory SET name = ?, description = ?, price = ?, quantity = ?, in_stock = ?, image_path = ?, sizes = ? WHERE id = ?");
+           $stmt->bind_param("ssdisssi", $name, $description, $price, $quantity, $in_stock, $image_path, $sizes, $id);
            
            if ($stmt->execute()) {
                $success_message = "Item updated successfully";
@@ -142,6 +174,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Get inventory items
 $query = "SELECT * FROM inventory ORDER BY name";
 $result = $conn->query($query);
+
+// Get low stock items count (less than 20)
+$low_stock_query = "SELECT COUNT(*) as low_stock_count FROM inventory WHERE quantity < 20";
+$low_stock_result = $conn->query($low_stock_query);
+$low_stock_count = 0; // Default value
+if ($low_stock_result && $low_stock_result->num_rows > 0) {
+    $low_stock_count = $low_stock_result->fetch_assoc()['low_stock_count'];
+}
+
+// Get low stock items for notification
+$low_stock_items_query = "SELECT * FROM inventory WHERE quantity < 20 ORDER BY quantity ASC";
+$low_stock_items = $conn->query($low_stock_items_query);
+if (!$low_stock_items) {
+    $low_stock_items = []; // Set default empty array if query fails
+}
+
+// Get total inventory items count
+$total_items_query = "SELECT COUNT(*) as total_inventory FROM inventory";
+$total_items = $conn->query($total_items_query)->fetch_assoc();
+
+// Get purchase statistics
+$stats_query = "SELECT 
+    COUNT(*) as total_orders,
+    SUM(quantity) as total_items,
+    SUM(total_price) as total_revenue
+FROM orders 
+WHERE status = 'completed'";
+$stats = $conn->query($stats_query)->fetch_assoc();
 ?>
 
 <?php include '../includes/header.php'; ?>
@@ -154,8 +214,43 @@ $result = $conn->query($query);
        <header class="bg-white shadow-sm z-10">
            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
                <h1 class="text-2xl font-semibold text-gray-900">Inventory Management</h1>
-               <div class="flex items-center">
-                   <span class="text-gray-700 mr-2"><?php echo $_SESSION['user_name']; ?></span>
+               <div class="flex items-center space-x-4">
+                   <!-- Notification Bell -->
+                   <div class="relative">
+                       <button id="notification-bell" class="relative p-2 text-gray-600 hover:text-gray-800 focus:outline-none">
+                           <i class="fas fa-bell text-xl"></i>
+                           <?php if ($low_stock_count > 0): ?>
+                           <span class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                               <?php echo $low_stock_count; ?>
+                           </span>
+                           <?php endif; ?>
+                       </button>
+                       <!-- Notification Dropdown -->
+                       <div id="notification-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg z-50">
+                           <div class="p-4 border-b">
+                               <h3 class="text-lg font-semibold text-gray-900">Low Stock Notifications</h3>
+                           </div>
+                           <div class="max-h-96 overflow-y-auto">
+                               <?php if ($low_stock_count > 0): ?>
+                                   <?php while ($item = $low_stock_items->fetch_assoc()): ?>
+                                   <div class="p-4 border-b hover:bg-gray-50">
+                                       <div class="flex items-center justify-between">
+                                           <div>
+                                               <p class="font-medium text-gray-900"><?php echo htmlspecialchars($item['name']); ?></p>
+                                               <p class="text-sm text-red-600">Only <?php echo $item['quantity']; ?> items left</p>
+                                           </div>
+                                       </div>
+                                   </div>
+                                   <?php endwhile; ?>
+                               <?php else: ?>
+                                   <div class="p-4 text-center text-gray-500">
+                                       No low stock items
+                                   </div>
+                               <?php endif; ?>
+                           </div>
+                       </div>
+                   </div>
+                   <span class="text-gray-700"><?php echo $_SESSION['user_name']; ?></span>
                    <button class="md:hidden rounded-md p-2 inline-flex items-center justify-center text-gray-500 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500" id="menu-button">
                        <span class="sr-only">Open menu</span>
                        <i class="fas fa-bars"></i>
@@ -179,11 +274,43 @@ $result = $conn->query($query);
                    </div>
                <?php endif; ?>
                
-               <!-- Add new item button -->
-               <div class="mb-6">
-                   <button type="button" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" onclick="openAddModal()">
-                       <i class="fas fa-plus mr-1"></i> Add New Item
-                   </button>
+               <div class="flex items-center justify-between mb-6">
+                   <div>
+                       <h2 class="text-xl font-bold tracking-tight text-gray-900">Manage Inventory</h2>
+                       <p class="text-gray-500">Add, edit, or remove items from the inventory</p>
+                   </div>
+                   <div class="flex items-center gap-4">
+                       <!-- Purchase Statistics -->
+                       <div class="bg-white rounded-lg shadow p-4">
+                           <div class="flex items-center gap-6">
+                               <div class="text-center">
+                                   <h3 class="text-sm font-medium text-gray-500">Total Inventory Items</h3>
+                                   <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($total_items['total_inventory']); ?></p>
+                               </div>
+                               <div class="text-center">
+                                   <h3 class="text-sm font-medium text-gray-500">Total Orders</h3>
+                                   <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($stats['total_orders']); ?></p>
+                               </div>
+                               <div class="text-center">
+                                   <h3 class="text-sm font-medium text-gray-500">Total Items Sold</h3>
+                                   <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($stats['total_items']); ?></p>
+                               </div>
+                               <div class="text-center">
+                                   <h3 class="text-sm font-medium text-gray-500">Total Revenue</h3>
+                                   <div class="relative">
+                                       <select id="revenue-period" class="text-2xl font-semibold text-gray-900 bg-transparent border-none focus:ring-0 cursor-pointer">
+                                           <option value="all">₱<?php echo number_format($stats['total_revenue'], 2); ?></option>
+                                           <option value="monthly">Monthly Revenue</option>
+                                           <option value="yearly">Yearly Revenue</option>
+                                       </select>
+                                   </div>
+                               </div>
+                           </div>
+                       </div>
+                       <button type="button" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500" onclick="openAddModal()">
+                           <i class="fas fa-plus mr-2"></i> Add New Item
+                       </button>
+                   </div>
                </div>
                
                <!-- Inventory table -->
@@ -207,7 +334,7 @@ $result = $conn->query($query);
                            <tbody class="bg-white divide-y divide-gray-200">
                                <?php if ($result->num_rows > 0): ?>
                                    <?php while ($item = $result->fetch_assoc()): ?>
-                                       <tr>
+                                       <tr class="<?php echo $item['quantity'] < 20 ? 'bg-red-50' : ''; ?>">
                                            <td class="px-6 py-4 whitespace-nowrap">
                                                <?php if ($item['image_path']): ?>
                                                    <img src="<?php echo $base_url . '/' . $item['image_path']; ?>" alt="<?php echo $item['name']; ?>" class="h-16 w-16 object-cover rounded-md">
@@ -270,6 +397,39 @@ $result = $conn->query($query);
            <div class="mb-4">
                <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
                <textarea id="description" name="description" rows="3" class="w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-500 focus:ring-opacity-50"></textarea>
+           </div>
+           <div id="sizes-container" class="mb-4 hidden">
+               <label class="block text-sm font-medium text-gray-700 mb-1">Available Sizes</label>
+               <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                   <div class="flex items-center">
+                       <input type="checkbox" id="size_xs" name="sizes[]" value="XS" class="rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-500 focus:ring-opacity-50">
+                       <label for="size_xs" class="ml-2 block text-sm text-gray-700">Extra Small (XS)</label>
+                   </div>
+                   <div class="flex items-center">
+                       <input type="checkbox" id="size_s" name="sizes[]" value="S" class="rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-500 focus:ring-opacity-50">
+                       <label for="size_s" class="ml-2 block text-sm text-gray-700">Small (S)</label>
+                   </div>
+                   <div class="flex items-center">
+                       <input type="checkbox" id="size_m" name="sizes[]" value="M" class="rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-500 focus:ring-opacity-50">
+                       <label for="size_m" class="ml-2 block text-sm text-gray-700">Medium (M)</label>
+                   </div>
+                   <div class="flex items-center">
+                       <input type="checkbox" id="size_l" name="sizes[]" value="L" class="rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-500 focus:ring-opacity-50">
+                       <label for="size_l" class="ml-2 block text-sm text-gray-700">Large (L)</label>
+                   </div>
+                   <div class="flex items-center">
+                       <input type="checkbox" id="size_xl" name="sizes[]" value="XL" class="rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-500 focus:ring-opacity-50">
+                       <label for="size_xl" class="ml-2 block text-sm text-gray-700">Extra Large (XL)</label>
+                   </div>
+                   <div class="flex items-center">
+                       <input type="checkbox" id="size_2xl" name="sizes[]" value="2XL" class="rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-500 focus:ring-opacity-50">
+                       <label for="size_2xl" class="ml-2 block text-sm text-gray-700">2XL</label>
+                   </div>
+                   <div class="flex items-center">
+                       <input type="checkbox" id="size_3xl" name="sizes[]" value="3XL" class="rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-500 focus:ring-opacity-50">
+                       <label for="size_3xl" class="ml-2 block text-sm text-gray-700">3XL</label>
+                   </div>
+               </div>
            </div>
            <div class="grid grid-cols-2 gap-4 mb-4">
                <div>
@@ -340,6 +500,39 @@ $result = $conn->query($query);
                <label for="edit_description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
                <textarea id="edit_description" name="description" rows="3" class="w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-500 focus:ring-opacity-50"></textarea>
            </div>
+           <div id="edit_sizes_container" class="mb-4 hidden">
+               <label class="block text-sm font-medium text-gray-700 mb-1">Available Sizes</label>
+               <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                   <div class="flex items-center">
+                       <input type="checkbox" id="edit_size_xs" name="sizes[]" value="XS" class="size-checkbox rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-500 focus:ring-opacity-50">
+                       <label for="edit_size_xs" class="ml-2 block text-sm text-gray-700">Extra Small (XS)</label>
+                   </div>
+                   <div class="flex items-center">
+                       <input type="checkbox" id="edit_size_s" name="sizes[]" value="S" class="size-checkbox rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-500 focus:ring-opacity-50">
+                       <label for="edit_size_s" class="ml-2 block text-sm text-gray-700">Small (S)</label>
+                   </div>
+                   <div class="flex items-center">
+                       <input type="checkbox" id="edit_size_m" name="sizes[]" value="M" class="size-checkbox rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-500 focus:ring-opacity-50">
+                       <label for="edit_size_m" class="ml-2 block text-sm text-gray-700">Medium (M)</label>
+                   </div>
+                   <div class="flex items-center">
+                       <input type="checkbox" id="edit_size_l" name="sizes[]" value="L" class="size-checkbox rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-500 focus:ring-opacity-50">
+                       <label for="edit_size_l" class="ml-2 block text-sm text-gray-700">Large (L)</label>
+                   </div>
+                   <div class="flex items-center">
+                       <input type="checkbox" id="edit_size_xl" name="sizes[]" value="XL" class="size-checkbox rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-500 focus:ring-opacity-50">
+                       <label for="edit_size_xl" class="ml-2 block text-sm text-gray-700">Extra Large (XL)</label>
+                   </div>
+                   <div class="flex items-center">
+                       <input type="checkbox" id="edit_size_2xl" name="sizes[]" value="2XL" class="size-checkbox rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-500 focus:ring-opacity-50">
+                       <label for="edit_size_2xl" class="ml-2 block text-sm text-gray-700">2XL</label>
+                   </div>
+                   <div class="flex items-center">
+                       <input type="checkbox" id="edit_size_3xl" name="sizes[]" value="3XL" class="size-checkbox rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-500 focus:ring focus:ring-emerald-500 focus:ring-opacity-50">
+                       <label for="edit_size_3xl" class="ml-2 block text-sm text-gray-700">3XL</label>
+                   </div>
+               </div>
+           </div>
            <div class="grid grid-cols-2 gap-4 mb-4">
                <div>
                    <label for="edit_price" class="block text-sm font-medium text-gray-700 mb-1">Price (₱)</label>
@@ -389,7 +582,7 @@ $result = $conn->query($query);
                </div>
            </div>
            <div class="flex justify-end">
-               <button type="button" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-md mr-2 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2" onclick="closeEditModal()">
+               <button type="button" class="bg-blue-200 text-gray-700 py-2 px-4 rounded-md mr-2 hover:bg-blue-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2" onclick="closeEditModal()">
                    Cancel
                </button>
                <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
@@ -426,20 +619,40 @@ $result = $conn->query($query);
        document.getElementById('edit_quantity').value = item.quantity;
        document.getElementById('edit_in_stock').checked = item.in_stock == 1;
        
-       // Handle image display
-       const currentImageContainer = document.getElementById('current-image-container');
-       const currentImage = document.getElementById('current-image');
+       // Check if item needs sizes
+       const needsSizes = sizingItems.some(sizingItem => item.name.includes(sizingItem));
+       const sizesContainer = document.getElementById('edit_sizes_container');
        
+       if (needsSizes) {
+           sizesContainer.classList.remove('hidden');
+           
+           // If we have sizes stored, check the appropriate boxes
+           if (item.sizes) {
+               try {
+                   const sizeArray = JSON.parse(item.sizes);
+                   document.querySelectorAll('.size-checkbox').forEach(checkbox => {
+                       checkbox.checked = sizeArray.includes(checkbox.value);
+                   });
+               } catch (e) {
+                   console.error('Error parsing sizes JSON:', e);
+               }
+           }
+       } else {
+           sizesContainer.classList.add('hidden');
+       }
+       
+       // Handle existing image display
+       const currentImageContainer = document.getElementById('current-image-container');
        if (item.image_path) {
            currentImageContainer.classList.remove('hidden');
-           currentImage.src = '../' + item.image_path;
+           document.getElementById('current-image').src = '../' + item.image_path;
        } else {
            currentImageContainer.classList.add('hidden');
        }
        
-       // Reset file input and preview
-       document.getElementById('edit_image').value = '';
+       // Clear edit image preview
        document.getElementById('edit-image-preview-container').classList.add('hidden');
+       document.getElementById('edit_image').value = '';
        document.getElementById('delete_image').checked = false;
        
        document.getElementById('editModal').classList.remove('hidden');
@@ -500,6 +713,70 @@ $result = $conn->query($query);
            // If delete is checked, clear any new image upload
            document.getElementById('edit_image').value = '';
            document.getElementById('edit-image-preview-container').classList.add('hidden');
+       }
+   });
+
+   document.getElementById('revenue-period').addEventListener('change', function() {
+       const period = this.value;
+       if (period === 'monthly' || period === 'yearly') {
+           // Make an AJAX call to get the revenue data
+           fetch('get_revenue.php?period=' + period)
+               .then(response => response.json())
+               .then(data => {
+                   if (period === 'monthly') {
+                       alert('Monthly Revenue: ₱' + data.revenue.toFixed(2));
+                   } else {
+                       alert('Yearly Revenue: ₱' + data.revenue.toFixed(2));
+                   }
+                   // Reset the dropdown
+                   this.value = 'all';
+               })
+               .catch(error => {
+                   console.error('Error:', error);
+                   alert('Error fetching revenue data');
+                   this.value = 'all';
+               });
+       }
+   });
+
+   document.addEventListener('DOMContentLoaded', function() {
+       const notificationBell = document.getElementById('notification-bell');
+       const notificationDropdown = document.getElementById('notification-dropdown');
+
+       notificationBell.addEventListener('click', function() {
+           notificationDropdown.classList.toggle('hidden');
+       });
+
+       // Close dropdown when clicking outside
+       document.addEventListener('click', function(event) {
+           if (!notificationBell.contains(event.target) && !notificationDropdown.contains(event.target)) {
+               notificationDropdown.classList.add('hidden');
+           }
+       });
+   });
+
+   // Add the JavaScript for size options display
+   const sizingItems = [
+       'BSIT OJT - Shirt', 
+       'NSTP Shirt - CWTS', 
+       'NSTP Shirt - LTS', 
+       'NSTP Shirt - ROTC',
+       'P.E - Pants',
+       'P.E T-Shirt'
+   ];
+   
+   // For the add item form
+   document.getElementById('name').addEventListener('input', function() {
+       const itemName = this.value.trim();
+       const sizesContainer = document.getElementById('sizes-container');
+       
+       // Check if current item name is in the sizing items list
+       const needsSizes = sizingItems.some(item => itemName.includes(item));
+       
+       if (needsSizes) {
+           sizesContainer.classList.remove('hidden');
+       } else {
+           sizesContainer.classList.add('hidden');
        }
    });
 </script>

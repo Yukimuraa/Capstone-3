@@ -11,6 +11,7 @@ $base_url = "..";
 
 $error = '';
 $success = '';
+$order_id = '';
 
 // Check if item ID is provided
 if (!isset($_GET['id'])) {
@@ -135,9 +136,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <?php if (!empty($success)): ?>
                   <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4">
                       <p><?php echo $success; ?></p>
-                      <p class="mt-2">
-                          <a href="orders.php" class="font-bold text-green-700 hover:underline">View your orders</a>
-                      </p>
+                      <div class="mt-4 flex space-x-4">
+                          <a href="receipt.php?order_id=<?php echo $order_id; ?>" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500">
+                              <i class="fas fa-receipt mr-2"></i> View Receipt
+                          </a>
+                          <a href="orders.php" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500">
+                              <i class="fas fa-list mr-2"></i> View All Orders
+                          </a>
+                      </div>
                   </div>
               <?php endif; ?>
               
@@ -169,7 +175,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                           <?php if (empty($success) && $item['quantity'] > 0 && $item['in_stock']): ?>
                               <form method="POST" action="order_item.php?id=<?php echo $item_id; ?>" class="mt-6">
                                   <div class="space-y-4">
-                                      <?php if (strpos(strtolower($item['name']), 'uniform') !== false || strpos(strtolower($item['description']), 'size') !== false): ?>
+                                      <?php 
+                                      $sizingItems = ['BSIT OJT - Shirt', 'NSTP Shirt - CWTS', 'NSTP Shirt - LTS', 'NSTP Shirt - ROTC', 'P.E - Pants', 'P.E T-Shirt'];
+                                      $needs_sizes = false;
+                                      
+                                      foreach ($sizingItems as $sizingItem) {
+                                          if (strpos($item['name'], $sizingItem) !== false) {
+                                              $needs_sizes = true;
+                                              break;
+                                          }
+                                      }
+                                      
+                                      if ($needs_sizes): 
+                                          $available_sizes = [];
+                                          if (!empty($item['sizes'])) {
+                                              $available_sizes = json_decode($item['sizes'], true);
+                                          }
+                                      ?>
+                                          <div>
+                                              <label for="size" class="block text-sm font-medium text-gray-700">Size</label>
+                                              <select id="size" name="size" required class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-md">
+                                                  <option value="">Select Size</option>
+                                                  <?php if (!empty($available_sizes)): ?>
+                                                      <?php foreach ($available_sizes as $size): ?>
+                                                          <option value="<?php echo $size; ?>"><?php echo $size; ?></option>
+                                                      <?php endforeach; ?>
+                                                  <?php else: ?>
+                                                      <option value="XS">Extra Small (XS)</option>
+                                                      <option value="S">Small (S)</option>
+                                                      <option value="M">Medium (M)</option>
+                                                      <option value="L">Large (L)</option>
+                                                      <option value="XL">Extra Large (XL)</option>
+                                                      <option value="2XL">2XL</option>
+                                                      <option value="3XL">3XL</option>
+                                                  <?php endif; ?>
+                                              </select>
+                                          </div>
+                                      <?php elseif (strpos(strtolower($item['name']), 'uniform') !== false || strpos(strtolower($item['description']), 'size') !== false): ?>
                                           <div>
                                               <label for="size" class="block text-sm font-medium text-gray-700">Size</label>
                                               <select id="size" name="size" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-md">
@@ -207,8 +249,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                               Cancel
                                           </a>
                                           <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-    Submit Order
-</button>
+                                              Submit Order
+                                          </button>
                                       </div>
                                   </div>
                               </form>

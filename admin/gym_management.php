@@ -124,55 +124,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Get filter parameters
-$status_filter = isset($_GET['status']) ? sanitize_input($_GET['status']) : '';
-$date_filter = isset($_GET['date']) ? sanitize_input($_GET['date']) : '';
+$status_filter = isset($_GET['status']) ? $_GET['status'] : 'all';
+$date_filter = isset($_GET['date']) ? $_GET['date'] : 'all';
 $facility_filter = isset($_GET['facility']) ? (int)$_GET['facility'] : 0;
 $search = isset($_GET['search']) ? sanitize_input($_GET['search']) : '';
 
-// Build query based on filters
-$query = "SELECT b.*, u.name as user_name, u.email as user_email, u.organization 
-          FROM bookings b 
-          JOIN users u ON b.user_id = u.id 
-          WHERE b.facility_type = 'gym'";
+// Build the query based on filters
+$query_conditions = [];
+$query_params = [];
+$param_types = "";
 
-$params = [];
-$types = "";
-
-if (!empty($status_filter)) {
-    $query .= " AND b.status = ?";
-    $params[] = $status_filter;
-    $types .= "s";
+if ($status_filter != 'all') {
+    if ($status_filter == 'approved') {
+        $query_conditions[] = "(status = 'approved' OR status = 'confirmed')";
+    } else {
+        $query_conditions[] = "status = ?";
+        $query_params[] = $status_filter;
+        $param_types .= "s";
+    }
 }
 
-if (!empty($date_filter)) {
-    $query .= " AND b.date = ?";
-    $params[] = $date_filter;
-    $types .= "s";
+if ($date_filter == 'upcoming') {
+    $query_conditions[] = "date >= CURDATE()";
+} elseif ($date_filter == 'past') {
+    $query_conditions[] = "date < CURDATE()";
 }
 
-if ($facility_filter > 0) {
-    $query .= " AND b.facility_id = ?";
-    $params[] = $facility_filter;
-    $types .= "i";
-}
+$conditions_sql = !empty($query_conditions) ? "WHERE " . implode(" AND ", $query_conditions) : "";
 
-if (!empty($search)) {
-    $search_term = "%$search%";
-    $query .= " AND (u.name LIKE ? OR u.email LIKE ? OR b.purpose LIKE ?)";
-    $params[] = $search_term;
-    $params[] = $search_term;
-    $params[] = $search_term;
-    $types .= "sss";
-}
+// Get all requests with pagination
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$per_page = 10;
+$offset = ($page - 1) * $per_page;
 
-$query .= " ORDER BY b.date DESC, b.start_time ASC";
-
-$stmt = $conn->prepare($query);
-if (!empty($params)) {
-    $stmt->bind_param($types, ...$params);
+$count_query = "SELECT COUNT(*) as total FROM bookings $conditions_sql";
+$stmt = $conn->prepare($count_query);
+if (!empty($query_params)) {
+    $stmt->bind_param($param_types, ...$query_params);
 }
 $stmt->execute();
-$bookings_result = $stmt->get_result();
+$total_result = $stmt->get_result();
+$total_rows = $total_result->fetch_assoc()['total'];
+$total_pages = ceil($total_rows / $per_page);
+
+// Get requests with user information
+$requests_query = "SELECT b.*, u.name as user_name, u.email as user_email 
+                  FROM bookings b
+                  LEFT JOIN users u ON b.user_id = u.id
+                  $conditions_sql
+                  ORDER BY b.date DESC, b.created_at DESC
+                  LIMIT ?, ?";
+$stmt = $conn->prepare($requests_query);
+if (!empty($query_params)) {
+    $stmt->bind_param($param_types . "ii", ...[...$query_params, $offset, $per_page]);
+} else {
+    $stmt->bind_param("ii", $offset, $per_page);
+}
+$stmt->execute();
+$requests = $stmt->get_result();
 
 // Get all facilities for filter dropdown
 $facilities_query = "SELECT * FROM gym_facilities ORDER BY name ASC";
@@ -315,12 +324,12 @@ $facilities_management_result = $conn->query($facilities_management_query);
                         <form action="gym_management.php" method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
                             <div>
                                 <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                                <select id="status" name="status" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
-                                    <option value="">All Statuses</option>
-                                    <option value="pending" <?php echo $status_filter === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                                    <option value="approved" <?php echo $status_filter === 'approved' ? 'selected' : ''; ?>>Approved</option>
-                                    <option value="rejected" <?php echo $status_filter === 'rejected' ? 'selected' : ''; ?>>Rejected</option>
-                                    <option value="cancelled" <?php echo $status_filter === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
+                                <select id="status" name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="all" <?php echo $status_filter == 'all' ? 'selected' : ''; ?>>All Statuses</option>
+                                    <option value="pending" <?php echo $status_filter == 'pending' ? 'selected' : ''; ?>>Pending</option>
+                                    <option value="approved" <?php echo $status_filter == 'approved' ? 'selected' : ''; ?>>Approved</option>
+                                    <option value="rejected" <?php echo $status_filter == 'rejected' ? 'selected' : ''; ?>>Rejected</option>
+                                    <option value="cancelled" <?php echo $status_filter == 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
                                 </select>
                             </div>
                             <div>
@@ -373,13 +382,13 @@ $facilities_management_result = $conn->query($facilities_management_query);
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
-                                    <?php if ($bookings_result->num_rows > 0): ?>
-                                        <?php while ($booking = $bookings_result->fetch_assoc()): ?>
+                                    <?php if ($requests->num_rows > 0): ?>
+                                        <?php while ($request = $requests->fetch_assoc()): ?>
                                             <?php 
                                             $status_class = '';
-                                            $status_text = ucfirst($booking['status']);
+                                            $status_text = ucfirst($request['status']);
                                             
-                                            switch ($booking['status']) {
+                                            switch ($request['status']) {
                                                 case 'pending':
                                                     $status_class = 'bg-yellow-100 text-yellow-800';
                                                     break;
@@ -399,29 +408,29 @@ $facilities_management_result = $conn->query($facilities_management_query);
                                             }
                                             
                                             // Parse additional info if exists
-                                            $additional_info = json_decode($booking['additional_info'] ?? '{}', true) ?: [];
+                                            $additional_info = json_decode($request['additional_info'] ?? '{}', true) ?: [];
                                             $admin_remarks = $additional_info['admin_remarks'] ?? '';
                                             ?>
                                             <tr>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><?php echo $booking['booking_id']; ?></td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><?php echo $request['booking_id']; ?></td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    <div class="font-medium"><?php echo $booking['user_name']; ?></div>
-                                                    <div class="text-xs text-gray-400"><?php echo $booking['user_email']; ?></div>
-                                                    <?php if (!empty($booking['organization'])): ?>
-                                                        <div class="text-xs text-gray-400"><?php echo $booking['organization']; ?></div>
+                                                    <div class="font-medium"><?php echo $request['user_name']; ?></div>
+                                                    <div class="text-xs text-gray-400"><?php echo $request['user_email']; ?></div>
+                                                    <?php if (!empty($request['organization'])): ?>
+                                                        <div class="text-xs text-gray-400"><?php echo $request['organization']; ?></div>
                                                     <?php endif; ?>
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    <div><?php echo date('F j, Y', strtotime($booking['date'])); ?></div>
+                                                    <div><?php echo date('F j, Y', strtotime($request['date'])); ?></div>
                                                     <div class="text-xs text-gray-400">
-                                                        <?php echo date('h:i A', strtotime($booking['start_time'])); ?> - 
-                                                        <?php echo date('h:i A', strtotime($booking['end_time'])); ?>
+                                                        <?php echo date('h:i A', strtotime($request['start_time'])); ?> - 
+                                                        <?php echo date('h:i A', strtotime($request['end_time'])); ?>
                                                     </div>
                                                 </td>
                                                 <td class="px-6 py-4 text-sm text-gray-500">
-                                                    <div><?php echo $booking['purpose']; ?></div>
+                                                    <div><?php echo $request['purpose']; ?></div>
                                                 </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo $booking['attendees']; ?></td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo $request['attendees']; ?></td>
                                                 <td class="px-6 py-4 whitespace-nowrap">
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $status_class; ?>">
                                                         <?php echo $status_text; ?>
@@ -429,25 +438,25 @@ $facilities_management_result = $conn->query($facilities_management_query);
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                     <button type="button" class="text-blue-600 hover:text-blue-900 mr-3" onclick="viewBookingDetails(<?php echo htmlspecialchars(json_encode([
-                                                        'id' => $booking['booking_id'],
-                                                        'user_name' => $booking['user_name'],
-                                                        'user_email' => $booking['user_email'],
-                                                        'facility_name' => $booking['facility_type'],
-                                                        'booking_date' => $booking['date'],
-                                                        'time_slot' => date('h:i A', strtotime($booking['start_time'])) . ' - ' . date('h:i A', strtotime($booking['end_time'])),
-                                                        'purpose' => $booking['purpose'],
-                                                        'participants' => $booking['attendees'],
-                                                        'status' => $booking['status'],
+                                                        'id' => $request['booking_id'],
+                                                        'user_name' => $request['user_name'],
+                                                        'user_email' => $request['user_email'],
+                                                        'facility_name' => $request['facility_type'],
+                                                        'booking_date' => $request['date'],
+                                                        'time_slot' => date('h:i A', strtotime($request['start_time'])) . ' - ' . date('h:i A', strtotime($request['end_time'])),
+                                                        'purpose' => $request['purpose'],
+                                                        'participants' => $request['attendees'],
+                                                        'status' => $request['status'],
                                                         'admin_remarks' => $admin_remarks
                                                     ])); ?>)">
                                                         View
                                                     </button>
                                                     
-                                                    <?php if ($booking['status'] === 'pending'): ?>
-                                                        <button type="button" class="text-green-600 hover:text-green-900 mr-3" onclick="openApproveModal('<?php echo $booking['booking_id']; ?>')">
+                                                    <?php if ($request['status'] === 'pending'): ?>
+                                                        <button type="button" class="text-green-600 hover:text-green-900 mr-3" onclick="openApproveModal('<?php echo $request['booking_id']; ?>')">
                                                             Approve
                                                         </button>
-                                                        <button type="button" class="text-red-600 hover:text-red-900" onclick="openRejectModal('<?php echo $booking['booking_id']; ?>')">
+                                                        <button type="button" class="text-red-600 hover:text-red-900" onclick="openRejectModal('<?php echo $request['booking_id']; ?>')">
                                                             Reject
                                                         </button>
                                                     <?php endif; ?>

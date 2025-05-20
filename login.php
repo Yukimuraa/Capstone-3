@@ -136,9 +136,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                          <i class="fas fa-user-tag"></i>
                      </span>
                      <select id="user_type" name="user_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                         <option value="student">Student</option>
-                         <option value="staff">Staff</option>
-                         <option value="admin">BAO Admin</option>
+                         <option value="student">Student / Faculty</option>
+                         <!-- <option value="staff">Staff</option> -->
+                         <option value="admin">BAO Admin / Staff</option>
                          <option value="external">External User</option>
                      </select>
                  </div>
